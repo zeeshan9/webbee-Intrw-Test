@@ -1,3 +1,6 @@
+import { getSequelizeInstance } from "app";
+import { QueryTypes } from "sequelize";
+
 export class MenuItemsService {
 
   /* TODO: complete getMenuItems so that it returns a nested menu structure
@@ -75,7 +78,75 @@ export class MenuItemsService {
     ]
   */
 
-  async getMenuItems() {
-    throw new Error('TODO in task 3');
-  }
+    async getMenuItems() {
+        const rawQuery = `
+          WITH RECURSIVE menu_items_recursive AS (
+            SELECT 
+              id,
+              name,
+              url,
+              parent_id,
+              created_at,
+              1 as level,
+              ARRAY[id] as path,
+              ARRAY[name] as path_name
+            FROM 
+              menu_items
+            WHERE 
+              parent_id IS NULL
+            
+            UNION ALL
+            
+            SELECT 
+              mi.id,
+              mi.name,
+              mi.url,
+              mi.parent_id,
+              mi.created_at,
+              mir.level + 1,
+              path || mi.id,
+              path_name || mi.name
+            FROM 
+              menu_items mi
+            INNER JOIN 
+              menu_items_recursive mir ON mir.id = mi.parent_id
+          )
+          SELECT 
+            id, 
+            name, 
+            url, 
+            parent_id,
+            created_at,
+            level,
+            path,
+            path_name
+          FROM 
+            menu_items_recursive
+          ORDER BY 
+            path
+        `;
+        const menuItems: any = await getSequelizeInstance().query(rawQuery, { type: QueryTypes.SELECT });
+      
+        const nestedMenuItems: any[] = [];
+      
+        // Creating an object to map menu item ids to their objects
+        const menuItemMap: any = {};
+        menuItems.forEach((menuItem: any) => {
+          menuItem.children = [];
+          menuItemMap[menuItem.id] = menuItem;
+        });
+      
+        // Iterating over menu items and add them to their parent's children array
+        menuItems.forEach((menuItem: any) => {
+          if (menuItem.parent_id) {
+            const parentMenuItem = menuItemMap[menuItem.parent_id];
+            parentMenuItem.children.push(menuItem);
+          } else {
+            nestedMenuItems.push(menuItem);
+          }
+        });
+      
+        return nestedMenuItems;
+      }
+      
 }

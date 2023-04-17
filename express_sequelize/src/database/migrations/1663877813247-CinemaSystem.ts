@@ -31,7 +31,7 @@ export default {
    * As a cinema owner I don't want to configure the seating for every show
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  up: (queryInterface: QueryInterface): Promise<void> => {
+  up: async (queryInterface: QueryInterface): Promise<void> => {
     throw new Error('TODO: implement migration in task 4');
   },
 
