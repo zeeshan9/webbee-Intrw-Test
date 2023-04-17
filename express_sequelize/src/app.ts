@@ -5,6 +5,16 @@ import http from "http";
 import { dataSourceOptions } from "./conf/datasource";
 import { Sequelize } from "sequelize-typescript";
 
+/* Doing this only bcz of time constraint, i ma having issue getting the instance */
+let sequelize: Sequelize;
+export const getSequelizeInstance = (): Sequelize => {
+    return sequelize;
+}
+
+export const setDataSource = (instance: Sequelize): void => {
+    sequelize = instance;
+}
+
 class App {
     public readonly app: express.Application;
     private server!: http.Server;
@@ -21,7 +31,7 @@ class App {
         return this.server;
     }
 
-    getDataSource() {
+    public getDataSource(): Sequelize {
         return this.dataSource;
     }
 

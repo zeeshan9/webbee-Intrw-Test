@@ -1,8 +1,9 @@
 import { EventWithWorkshops } from 'models/events';
 import Event from './entities/event.entity';
 import Workshop from './entities/workshop.entity';
-
-
+import { Op }
+from 'sequelize';
+import { getSequelizeInstance } from 'app';
 export class EventsService {
   async getWarmupEvents() {
     return await Event.findAll();
@@ -180,7 +181,57 @@ export class EventsService {
     ]
     ```
      */
-  async getFutureEventWithWorkshops() {
-    throw new Error('TODO task 2');
-  }
+    async getFutureEventWithWorkshops() {
+      const events = await Event.findAll({
+        // sequeslize instance to was not working properly. so i just use
+        include: [
+          {
+            model: Workshop,
+            attributes: [
+              'id',
+              'start',
+              'end',
+              'eventId',
+              'name',
+              'createdAt',
+              [getSequelizeInstance().fn('min', getSequelizeInstance().col('start')), 'minStart'], // get the minimum start time of all workshops
+            ],
+            where: {
+              start: {
+                [Op.gt]: new Date(), // only get workshops that start in the future
+              },
+            },
+            required: true, // only get events that have at least one workshop
+          },
+        ],
+        attributes: [
+          'id',
+          'name',
+          'createdAt',
+          [getSequelizeInstance().literal('min(`Workshops`.`start`)'), 'minStart'], // get the minimum start time of all workshops
+        ],
+        group: ['Event.id'], // group by event id to avoid duplicates
+        having: {
+          minStart: {
+            [Op.gt]: new Date(), // only get events that have not yet started
+          },
+        },
+      });
+    
+      // convert the events to plain objects and remove unnecessary attributes
+      return events.map((event: any) => ({
+        id: event.id,
+        name: event.name,
+        createdAt: event.createdAt,
+        workshops: event.Workshops.map((workshop: any) => ({
+          id: workshop.id,
+          start: workshop.start,
+          end: workshop.end,
+          eventId: workshop.eventId,
+          name: workshop.name,
+          createdAt: workshop.createdAt,
+        })),
+      }));
+    }
+    
 }
