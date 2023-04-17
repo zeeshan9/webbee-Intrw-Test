@@ -48,6 +48,7 @@ class App {
     private async initializeControllers() {
         this.dataSource = new Sequelize(dataSourceOptions);
         await this.dataSource.authenticate();
+        setDataSource(this.dataSource);
         this.controllers = this.controllersCallback(this);
         this.controllers.forEach((controller) => {
             this.app.use('/', controller.router);
